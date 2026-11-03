@@ -159,12 +159,50 @@
             margin-top: 60px; text-align: center; font-size: 0.8rem; color: #4e4e66;
             border-top: 1px dashed #1f1f2e; padding-top: 20px; width: 100%;
         }
+
+        /* ===== Share / import codes ===== */
+        .share-box, .view-banner {
+            background: #14141f; border: 1px solid #232336; border-radius: 10px;
+            padding: 16px 18px; margin-bottom: 25px;
+        }
+        .share-title { font-weight: 700; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: #fff; margin-bottom: 10px; }
+        .share-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+        .share-row:last-child { margin-bottom: 0; }
+        .share-input {
+            flex: 1; min-width: 200px; background: #0b0b10; border: 1px solid #3b3b54; color: #d1d1e0;
+            border-radius: 6px; padding: 8px 10px; font-family: Consolas, monospace; font-size: 0.85rem; outline: none;
+        }
+        .share-input:focus { border-color: #a55eea; }
+        .btn {
+            background: #1c1c2e; border: 1px solid #3b3b54; color: #d1d1e0; border-radius: 6px;
+            padding: 8px 14px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.5px; cursor: pointer; transition: background 0.2s, border-color 0.2s;
+        }
+        .btn:hover { background: #26263d; border-color: #a55eea; }
+        .btn.primary { background: #7042a6; border-color: #a55eea; color: #fff; }
+        .btn.primary:hover { background: #8550c4; }
+        .share-msg { font-size: 0.8rem; min-height: 1em; color: #a3a3c2; }
+        .share-msg.err { color: #ff5555; }
+        .view-banner { border-color: #a55eea; text-align: center; }
+        .view-banner p { margin: 0 0 12px; font-size: 0.95rem; }
+        .view-banner .share-row { justify-content: center; margin-bottom: 0; }
+        input[type="checkbox"]:disabled, input[type="checkbox"]:disabled + * { cursor: default; }
+        .view-mode .check-label { cursor: default; }
+        [hidden] { display: none !important; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>Nullscape Badges</h1>
+
+    <div class="view-banner" id="view-banner" hidden>
+        <p>👀 You are viewing <b>someone else's</b> progress (read-only). Your own progress is untouched.</p>
+        <div class="share-row">
+            <button class="btn primary" id="btn-save-mine">Save as my progress</button>
+            <button class="btn" id="btn-back-mine">Back to my progress</button>
+        </div>
+    </div>
 
     <div class="progress-container">
         <div class="progress-row">
@@ -175,6 +213,22 @@
             <div class="progress-text ext-color" id="ext-counter">Extreme Progress: 0 / 0 (0%)</div>
             <div class="progress-bar-bg"><div class="progress-bar-fill ext-fill" id="ext-fill"></div></div>
         </div>
+    </div>
+
+    <div class="share-box" id="share-box">
+        <div class="share-title">Share your progress</div>
+        <div class="share-row">
+            <input class="share-input" id="my-code" type="text" readonly>
+            <button class="btn" id="btn-copy-code">Copy code</button>
+            <button class="btn primary" id="btn-copy-link">Copy link</button>
+        </div>
+        <div class="share-title" style="margin-top:14px">Open a code</div>
+        <div class="share-row">
+            <input class="share-input" id="import-code" type="text" placeholder="Paste a code or a link here">
+            <button class="btn" id="btn-view-code">View</button>
+            <button class="btn" id="btn-import-code">Import as mine</button>
+        </div>
+        <div class="share-msg" id="share-msg"></div>
     </div>
 
     <!-- Две главные плашки сверху -->
@@ -558,66 +612,179 @@
 
 
     <script>
+        // ===== Порядок битов в коде =====
+        // ВАЖНО: порядок фиксирован. Добавляешь новую ачивку -> допиши её id В КОНЕЦ этого списка,
+        // тогда все ранее выданные коды продолжат работать.
+        const BIT_ORDER = ["100std-std", "100ext-ext", "marts500-std", "marts500-ext", "bellblast-std", "bellblast-ext", "bigmart-std", "bigmart-ext", "blossom-std", "blossom-ext", "chaos-std", "chaos-ext", "chaosdemon-std", "chaosdemon-ext", "champmid-std", "champmid-ext", "slip-std", "slip-ext", "commwin-std", "commwin-ext", "conga-std", "conga-ext", "crash-std", "crash-ext", "recession-std", "recession-ext", "financial-std", "financial-ext", "forensic-std", "forensic-ext", "hehn-std", "hehn-ext", "highrise-std", "highrise-ext", "homefor-std", "homefor-ext", "howdid-std", "howdid-ext", "iguess-std", "iguess-ext", "ihate-std", "ihate-ext", "jackpot-std", "jackpot-ext", "zoo-std", "zoo-ext", "dependence-std", "dependence-ext", "him-std", "him-ext", "allin-std", "allin-ext", "takingdown-std", "takingdown-ext", "ichhasse-std", "ichhasse-ext", "feedbackloop-std", "feedbackloop-ext", "squarehole-std", "squarehole-ext", "itstime-std", "itstime-ext", "gambling-std", "gambling-ext", "lap2-std", "lap2-ext", "l12-std", "l12-ext", "l25-std", "l25-ext", "l5-std", "l5-ext", "l50p-std", "l50p-ext", "l50-std", "l50-ext", "martbell-std", "martbell-ext", "slide-std", "slide-ext", "purif-std", "purif-ext", "neardeath-std", "neardeath-ext", "overload-std", "overload-ext", "bbq-std", "bbq-ext", "dontsee-std", "dontsee-ext", "destroyer-std", "destroyer-ext", "grandrev-std", "grandrev-ext", "bestp5add-std", "bestp5add-ext", "unftim-std", "unftim-ext", "rightthere-std", "rightthere-ext", "cadence-std", "cadence-ext"];
+        const CODE_PREFIX = 'v1-';
+
+        function allBoxes() { return Array.from(document.querySelectorAll('input[type="checkbox"]')); }
+
+        // Итоговый порядок: зафиксированный список + любые новые id из HTML (по порядку в странице)
+        function orderedIds() {
+            const extra = allBoxes().map(c => c.id).filter(id => id && !BIT_ORDER.includes(id));
+            return BIT_ORDER.concat(extra);
+        }
+
+        // Состояние чекбоксов -> код
+        function encodeState() {
+            const idsList = orderedIds();
+            const bytes = new Uint8Array(Math.ceil(idsList.length / 8));
+            idsList.forEach((id, i) => {
+                const el = document.getElementById(id);
+                if (el && el.checked) bytes[i >> 3] |= (1 << (i & 7));
+            });
+            let bin = '';
+            bytes.forEach(b => bin += String.fromCharCode(b));
+            return CODE_PREFIX + btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        }
+
+        // Код -> объект {id: true/false} либо null, если код кривой
+        function decodeCode(raw) {
+            if (!raw) return null;
+            raw = raw.trim();
+            if (raw.includes('#')) raw = raw.slice(raw.lastIndexOf('#') + 1);   // можно вставить ссылку целиком
+            if (!raw.startsWith(CODE_PREFIX)) return null;
+            const body = raw.slice(CODE_PREFIX.length);
+            if (!/^[A-Za-z0-9_-]*$/.test(body)) return null;
+            try {
+                let b64 = body.replace(/-/g, '+').replace(/_/g, '/');
+                while (b64.length % 4) b64 += '=';
+                const bin = atob(b64);
+                const state = {};
+                orderedIds().forEach((id, i) => {
+                    const byte = i >> 3;
+                    state[id] = byte < bin.length ? !!(bin.charCodeAt(byte) & (1 << (i & 7))) : false;
+                });
+                return state;
+            } catch (e) { return null; }
+        }
+
+        function shareLink(code) { return location.origin + location.pathname + '#' + code; }
+
+        function setMsg(text, isErr) {
+            const m = document.getElementById('share-msg');
+            m.textContent = text || '';
+            m.className = 'share-msg' + (isErr ? ' err' : '');
+        }
+
+        function copyText(text, okMsg) {
+            const done = () => setMsg(okMsg);
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+            } else { fallbackCopy(text, done); }
+        }
+        function fallbackCopy(text, done) {
+            const ta = document.createElement('textarea');
+            ta.value = text; document.body.appendChild(ta); ta.select();
+            try { document.execCommand('copy'); done(); } catch (e) { setMsg('Could not copy, select it manually', true); }
+            document.body.removeChild(ta);
+        }
+
+        function saveStateToStorage(state) {
+            Object.keys(state).forEach(id => {
+                try { localStorage.setItem(id, state[id] ? 'true' : 'false'); } catch (e) {}
+            });
+        }
+
         // Функция пересчета двойного прогресса
         function updateDoubleProgress() {
-            // Ищем чекбоксы ТОЛЬКО внутри основной сетки .grid (игнорируя верхние плашки)
             const stdCheckboxes = document.querySelectorAll('.grid input[type="checkbox"].std-ch');
             const extCheckboxes = document.querySelectorAll('.grid input[type="checkbox"].ext-ch');
 
-            // Считаем общее количество и сколько отмечено для Standard
             const totalStd = stdCheckboxes.length;
             const checkedStd = Array.from(stdCheckboxes).filter(ch => ch.checked).length;
             const percentStd = totalStd > 0 ? Math.round((checkedStd / totalStd) * 100) : 0;
 
-            // Считаем общее количество и сколько отмечено для Extreme
             const totalExt = extCheckboxes.length;
             const checkedExt = Array.from(extCheckboxes).filter(ch => ch.checked).length;
             const percentExt = totalExt > 0 ? Math.round((checkedExt / totalExt) * 100) : 0;
 
-            // Обновляем фиолетовый бар (Standard)
             const stdCounter = document.getElementById('std-counter');
             const stdFill = document.getElementById('std-fill');
             if (stdCounter) stdCounter.textContent = `Standard Progress: ${checkedStd} / ${totalStd} (${percentStd}%)`;
             if (stdFill) stdFill.style.width = `${percentStd}%`;
 
-            // Обновляем красный бар (Extreme)
             const extCounter = document.getElementById('ext-counter');
             const extFill = document.getElementById('ext-fill');
             if (extCounter) extCounter.textContent = `Extreme Progress: ${checkedExt} / ${totalExt} (${percentExt}%)`;
             if (extFill) extFill.style.width = `${percentExt}%`;
         }
 
-        // Инициализация трекера при загрузке страницы
-        function initTracker() {
-            // Находим вообще все чекбоксы (включая две главные плашки сверху)
-            const allCheckboxes = document.querySelectorAll('input[type="checkbox"]');
+        function refreshMyCode() {
+            const input = document.getElementById('my-code');
+            if (input) input.value = encodeState();
+        }
 
-            // Восстанавливаем состояния из localStorage по ID чекбокса
-            allCheckboxes.forEach(ch => {
+        function initTracker() {
+            const boxes = allBoxes();
+            const hashState = decodeCode(location.hash.slice(1));
+
+            if (hashState) {
+                // ===== Режим просмотра чужого прогресса: localStorage НЕ трогаем =====
+                document.body.classList.add('view-mode');
+                boxes.forEach(ch => { ch.checked = !!hashState[ch.id]; ch.disabled = true; });
+                document.getElementById('view-banner').hidden = false;
+                document.getElementById('share-box').hidden = true;
+                document.title = 'Nullscape Badges Tracker (shared view)';
+                updateDoubleProgress();
+
+                document.getElementById('btn-save-mine').addEventListener('click', () => {
+                    if (confirm('This will overwrite YOUR saved progress with the one you are viewing. Continue?')) {
+                        saveStateToStorage(hashState);
+                        location.href = location.pathname;
+                    }
+                });
+                document.getElementById('btn-back-mine').addEventListener('click', () => {
+                    location.href = location.pathname;
+                });
+                return;
+            }
+
+            // ===== Обычный режим =====
+            boxes.forEach(ch => {
                 if (ch.id) {
-                    const savedValue = localStorage.getItem(ch.id);
-                    ch.checked = (savedValue === 'true');
+                    let saved = null;
+                    try { saved = localStorage.getItem(ch.id); } catch (e) {}
+                    ch.checked = (saved === 'true');
                 }
             });
-
-            // Первичный расчет шкал после загрузки данных
             updateDoubleProgress();
+            refreshMyCode();
 
-            // Вешаем одно общее событие клика на весь body (делегирование событий)
             document.body.addEventListener('change', (event) => {
                 if (event.target && event.target.type === 'checkbox') {
                     const ch = event.target;
-                    // Сохраняем состояние измененного чекбокса
-                    if (ch.id) {
-                        localStorage.setItem(ch.id, ch.checked);
-                    }
-                    // Пересчитываем бары
+                    if (ch.id) { try { localStorage.setItem(ch.id, ch.checked); } catch (e) {} }
                     updateDoubleProgress();
+                    refreshMyCode();
+                }
+            });
+
+            const codeInput = document.getElementById('my-code');
+            codeInput.addEventListener('focus', () => codeInput.select());
+            document.getElementById('btn-copy-code').addEventListener('click', () => copyText(encodeState(), 'Code copied!'));
+            document.getElementById('btn-copy-link').addEventListener('click', () => copyText(shareLink(encodeState()), 'Link copied! Send it to anyone.'));
+
+            document.getElementById('btn-view-code').addEventListener('click', () => {
+                const raw = document.getElementById('import-code').value;
+                const st = decodeCode(raw);
+                if (!st) { setMsg('Invalid code', true); return; }
+                const code = raw.trim().slice(raw.trim().lastIndexOf(CODE_PREFIX));
+                location.href = location.pathname + '#' + code;
+                location.reload();
+            });
+            document.getElementById('btn-import-code').addEventListener('click', () => {
+                const st = decodeCode(document.getElementById('import-code').value);
+                if (!st) { setMsg('Invalid code', true); return; }
+                if (confirm('This will overwrite YOUR current progress with the code. Continue?')) {
+                    saveStateToStorage(st);
+                    location.reload();
                 }
             });
         }
 
-        // Запуск логики сразу после готовности DOM-дерева
+        window.addEventListener('hashchange', () => location.reload());
         document.addEventListener('DOMContentLoaded', initTracker);
     </script>
 </body>
