@@ -211,6 +211,15 @@ h1, .badge-name, .share-title { color:var(--head); }
 .btn.primary { background:var(--a1d); border-color:var(--a1); color:#fff; }
 .controls, .milestones-top, footer { border-color:var(--line); }
 .theme-picker { display:flex; justify-content:center; gap:8px; margin-bottom:20px; }
+[data-theme="gold"] { --bg:#0f0c05; --card:#1a1608; --line:#3d3312; --text:#f3e6b8; --head:#fff6d6; --a1:#ffd23f; --a2:#ff9f1c; --a1d:#b38f00; --a2d:#b36b00; }
+.rank { text-align:center; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--a1); margin-bottom:18px; }
+.toolbar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; }
+.btn.active { border-color:var(--a1); box-shadow:0 0 0 1px var(--a1); }
+#toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(80px); background:var(--card); border:1px solid var(--a1); color:var(--head); padding:10px 18px; border-radius:8px; transition:transform .3s; z-index:9; }
+#toast.show { transform:translateX(-50%) translateY(0); }
+.badge-card.flash { outline:2px solid var(--a1); }
+.confetti { position:fixed; top:-10px; width:8px; height:12px; z-index:99; pointer-events:none; animation:fall 2.5s linear forwards; }
+@keyframes fall { to { transform:translateY(105vh) rotate(720deg); } }
 </style>
 	
 </head>
@@ -219,10 +228,12 @@ h1, .badge-name, .share-title { color:var(--head); }
 <div class="container">
     <h1>Badges Tracker</h1>
 <div class="theme-picker">
+	
   <button class="btn" data-theme-btn="void">Void</button>
   <button class="btn" data-theme-btn="neon">Neon</button>
   <button class="btn" data-theme-btn="blood">Blood</button>
   <button class="btn" data-theme-btn="light">Light</button>
+  <button class="btn" id="gold-btn" data-theme-btn="gold" hidden>Gold</button>
 </div>
     <div class="view-banner" id="view-banner" hidden>
         <p>👀 You are viewing <b>someone else's</b> progress (read-only). Your own progress is untouched.</p>
@@ -274,7 +285,15 @@ h1, .badge-name, .share-title { color:var(--head); }
             </div>
         </div>
     </div>
-
+	<div class="rank" id="rank"></div>
+<div class="toolbar">
+  <input class="share-input" id="search" placeholder="Search badges...">
+  <button class="btn active" data-filter="all">All</button>
+  <button class="btn" data-filter="todo">Missing</button>
+  <button class="btn" data-filter="done">Done</button>
+  <button class="btn" id="btn-random">Random next</button>
+</div>
+<div id="toast"></div>
     <div class="grid">
         <div class="badge-card">
             <div class="badge-header"><img class="badge-img" src="img/500marts.png"><div class="badge-name">500 Marts.</div></div>
@@ -814,6 +833,99 @@ document.addEventListener('click', e => {
 
         window.addEventListener('hashchange', () => location.reload());
         document.addEventListener('DOMContentLoaded', initTracker);
+		(function () {
+  const RANKS = [[0,'Mart Intern'],[10,'Cart Pusher'],[25,'Shelf Stocker'],[50,'Mart Manager'],[75,'Mart Legend'],[100,'Elite Ball Knowledge']];
+  const viewMode = () => document.body.classList.contains('view-mode');
+  let filter = 'all';
+
+  function stats() {
+    const b = [...document.querySelectorAll('.grid input[type="checkbox"]')];
+    const std = b.filter(c => c.classList.contains('std-ch'));
+    const ext = b.filter(c => c.classList.contains('ext-ch'));
+    const n = a => a.filter(c => c.checked).length;
+    return { std: n(std), stdT: std.length, ext: n(ext), extT: ext.length };
+  }
+  function updateRank() {
+    const s = stats();
+    const pct = Math.round((s.std + s.ext) / ((s.stdT + s.extT) || 1) * 100);
+    let r = RANKS[0][1];
+    RANKS.forEach(x => { if (pct >= x[0]) r = x[1]; });
+    document.getElementById('rank').textContent = 'Rank: ' + r;
+    return s;
+  }
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+  function confetti() {
+    for (let i = 0; i < 80; i++) {
+      const e = document.createElement('div');
+      e.className = 'confetti';
+      e.style.left = Math.random() * 100 + 'vw';
+      e.style.background = 'hsl(' + Math.random() * 360 + ',90%,60%)';
+      e.style.animationDelay = Math.random() * 0.6 + 's';
+      document.body.appendChild(e);
+      setTimeout(() => e.remove(), 3600);
+    }
+  }
+  function checkGold() {
+    let un = false;
+    try { un = localStorage.getItem('goldUnlocked') === '1'; } catch (e) {}
+    const s = stats();
+    if (!un && !viewMode() && s.stdT && s.std === s.stdT) {
+      un = true;
+      try { localStorage.setItem('goldUnlocked', '1'); } catch (e) {}
+      confetti(); toast('Secret theme unlocked: Gold!');
+    }
+    document.getElementById('gold-btn').hidden = !un;
+  }
+  function applyFilter() {
+    const q = document.getElementById('search').value.toLowerCase();
+    document.querySelectorAll('.grid .badge-card').forEach(card => {
+      const name = card.querySelector('.badge-name').textContent.toLowerCase();
+      const boxes = [...card.querySelectorAll('input')];
+      const has = boxes.length > 0;
+      const done = has && boxes.every(c => c.checked);
+      const ok = filter === 'all' || (has && (filter === 'done' ? done : !done));
+      card.hidden = !(name.includes(q) && ok);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    updateRank(); checkGold(); applyFilter();
+    document.querySelectorAll('[data-theme-btn]').forEach(b =>
+      b.classList.toggle('active', b.dataset.themeBtn === document.documentElement.dataset.theme));
+    document.getElementById('search').addEventListener('input', applyFilter);
+    document.querySelectorAll('[data-filter]').forEach(b => b.addEventListener('click', () => {
+      filter = b.dataset.filter;
+      document.querySelectorAll('[data-filter]').forEach(x => x.classList.toggle('active', x === b));
+      applyFilter();
+    }));
+    document.getElementById('btn-random').addEventListener('click', () => {
+      const open = [...document.querySelectorAll('.grid .badge-card')].filter(c => {
+        const b = [...c.querySelectorAll('input')];
+        return b.length && !b.every(x => x.checked);
+      });
+      if (!open.length) { toast('Nothing left, you did it all!'); return; }
+      const c = open[Math.floor(Math.random() * open.length)];
+      c.hidden = false;
+      c.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      c.classList.add('flash'); setTimeout(() => c.classList.remove('flash'), 2000);
+    });
+  });
+
+  document.body.addEventListener('change', e => {
+    const c = e.target;
+    if (c.type !== 'checkbox' || viewMode()) return;
+    const s = updateRank();
+    if (c.checked) {
+      toast('Badge unlocked: ' + c.closest('.badge-card').querySelector('.badge-name').textContent);
+      if (s.std === s.stdT || s.ext === s.extT) confetti();
+    }
+    checkGold(); applyFilter();
+  });
+})();
     </script>
 </body>
 </html>
