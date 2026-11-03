@@ -190,12 +190,40 @@
         .view-mode .check-label { cursor: default; }
         [hidden] { display: none !important; }
     </style>
+	
+	<style id="themes">
+:root, [data-theme="void"] { --bg:#0b0b10; --card:#14141f; --line:#232336; --text:#d1d1e0; --head:#fff; --a1:#a55eea; --a2:#ff3333; --a1d:#7042a6; --a2d:#b31e1e; }
+[data-theme="neon"]  { --bg:#05060f; --card:#0d1022; --line:#1d2a55; --text:#cfe8ff; --head:#fff; --a1:#00e5ff; --a2:#ff2bd6; --a1d:#0086a0; --a2d:#a3128b; }
+[data-theme="blood"] { --bg:#120808; --card:#1e0e0e; --line:#3a1818; --text:#e8d0d0; --head:#fff; --a1:#ff6b3d; --a2:#ff1f1f; --a1d:#b34522; --a2d:#8f0f0f; }
+[data-theme="light"] { --bg:#f2f2f7; --card:#fff; --line:#d8d8e6; --text:#2b2b3a; --head:#111; --a1:#7a3fd1; --a2:#d62828; --a1d:#9b6be0; --a2d:#e65a5a; }
+
+body { background:var(--bg); color:var(--text); }
+h1, .badge-name, .share-title { color:var(--head); }
+.progress-container, .badge-card, .share-box, .view-banner { background:var(--card); border-color:var(--line); }
+.progress-bar-bg, .badge-img, input[type="checkbox"], .share-input { background:var(--bg); }
+.progress-text.std-color { color:var(--a1); }
+.progress-text.ext-color { color:var(--a2); }
+.std-fill { background:linear-gradient(90deg,var(--a1d),var(--a1)); }
+.ext-fill { background:linear-gradient(90deg,var(--a2d),var(--a2)); }
+.std-ch:checked { background-color:var(--a1); border-color:var(--a1); }
+.ext-ch:checked { background-color:var(--a2); border-color:var(--a2); }
+.btn { background:var(--card); color:var(--text); border-color:var(--line); }
+.btn.primary { background:var(--a1d); border-color:var(--a1); color:#fff; }
+.controls, .milestones-top, footer { border-color:var(--line); }
+.theme-picker { display:flex; justify-content:center; gap:8px; margin-bottom:20px; }
+</style>
+	
 </head>
 <body>
 
 <div class="container">
     <h1>Nullscape Badges</h1>
-
+<div class="theme-picker">
+  <button class="btn" data-theme-btn="void">Void</button>
+  <button class="btn" data-theme-btn="neon">Neon</button>
+  <button class="btn" data-theme-btn="blood">Blood</button>
+  <button class="btn" data-theme-btn="light">Light</button>
+</div>
     <div class="view-banner" id="view-banner" hidden>
         <p>👀 You are viewing <b>someone else's</b> progress (read-only). Your own progress is untouched.</p>
         <div class="share-row">
@@ -612,7 +640,15 @@
 
 
     <script>
-
+		function applyTheme(t) {
+  document.documentElement.dataset.theme = t;
+  try { localStorage.setItem('theme', t); } catch (e) {}
+}
+try { applyTheme(localStorage.getItem('theme') || 'void'); } catch (e) { applyTheme('void'); }
+document.addEventListener('click', e => {
+  const t = e.target.dataset && e.target.dataset.themeBtn;
+  if (t) applyTheme(t);
+});
         const BIT_ORDER = ["100std-std", "100ext-ext", "marts500-std", "marts500-ext", "bellblast-std", "bellblast-ext", "bigmart-std", "bigmart-ext", "blossom-std", "blossom-ext", "chaos-std", "chaos-ext", "chaosdemon-std", "chaosdemon-ext", "champmid-std", "champmid-ext", "slip-std", "slip-ext", "commwin-std", "commwin-ext", "conga-std", "conga-ext", "crash-std", "crash-ext", "recession-std", "recession-ext", "financial-std", "financial-ext", "forensic-std", "forensic-ext", "hehn-std", "hehn-ext", "highrise-std", "highrise-ext", "homefor-std", "homefor-ext", "howdid-std", "howdid-ext", "iguess-std", "iguess-ext", "ihate-std", "ihate-ext", "jackpot-std", "jackpot-ext", "zoo-std", "zoo-ext", "dependence-std", "dependence-ext", "him-std", "him-ext", "allin-std", "allin-ext", "takingdown-std", "takingdown-ext", "ichhasse-std", "ichhasse-ext", "feedbackloop-std", "feedbackloop-ext", "squarehole-std", "squarehole-ext", "itstime-std", "itstime-ext", "gambling-std", "gambling-ext", "lap2-std", "lap2-ext", "l12-std", "l12-ext", "l25-std", "l25-ext", "l5-std", "l5-ext", "l50p-std", "l50p-ext", "l50-std", "l50-ext", "martbell-std", "martbell-ext", "slide-std", "slide-ext", "purif-std", "purif-ext", "neardeath-std", "neardeath-ext", "overload-std", "overload-ext", "bbq-std", "bbq-ext", "dontsee-std", "dontsee-ext", "destroyer-std", "destroyer-ext", "grandrev-std", "grandrev-ext", "bestp5add-std", "bestp5add-ext", "unftim-std", "unftim-ext", "rightthere-std", "rightthere-ext", "cadence-std", "cadence-ext"];
         const CODE_PREFIX = 'v1-';
 
