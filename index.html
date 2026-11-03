@@ -607,26 +607,22 @@
 </div>
 
 <footer>
-    Page started by AI(but I made like 70% myself) because I am a lazy bum whos ass aint thinking
+    Page started by AI(but I made like 69% myself) because I am a lazy bum whos ass aint thinking
 </footer>
 
 
     <script>
-        // ===== Порядок битов в коде =====
-        // ВАЖНО: порядок фиксирован. Добавляешь новую ачивку -> допиши её id В КОНЕЦ этого списка,
-        // тогда все ранее выданные коды продолжат работать.
+
         const BIT_ORDER = ["100std-std", "100ext-ext", "marts500-std", "marts500-ext", "bellblast-std", "bellblast-ext", "bigmart-std", "bigmart-ext", "blossom-std", "blossom-ext", "chaos-std", "chaos-ext", "chaosdemon-std", "chaosdemon-ext", "champmid-std", "champmid-ext", "slip-std", "slip-ext", "commwin-std", "commwin-ext", "conga-std", "conga-ext", "crash-std", "crash-ext", "recession-std", "recession-ext", "financial-std", "financial-ext", "forensic-std", "forensic-ext", "hehn-std", "hehn-ext", "highrise-std", "highrise-ext", "homefor-std", "homefor-ext", "howdid-std", "howdid-ext", "iguess-std", "iguess-ext", "ihate-std", "ihate-ext", "jackpot-std", "jackpot-ext", "zoo-std", "zoo-ext", "dependence-std", "dependence-ext", "him-std", "him-ext", "allin-std", "allin-ext", "takingdown-std", "takingdown-ext", "ichhasse-std", "ichhasse-ext", "feedbackloop-std", "feedbackloop-ext", "squarehole-std", "squarehole-ext", "itstime-std", "itstime-ext", "gambling-std", "gambling-ext", "lap2-std", "lap2-ext", "l12-std", "l12-ext", "l25-std", "l25-ext", "l5-std", "l5-ext", "l50p-std", "l50p-ext", "l50-std", "l50-ext", "martbell-std", "martbell-ext", "slide-std", "slide-ext", "purif-std", "purif-ext", "neardeath-std", "neardeath-ext", "overload-std", "overload-ext", "bbq-std", "bbq-ext", "dontsee-std", "dontsee-ext", "destroyer-std", "destroyer-ext", "grandrev-std", "grandrev-ext", "bestp5add-std", "bestp5add-ext", "unftim-std", "unftim-ext", "rightthere-std", "rightthere-ext", "cadence-std", "cadence-ext"];
         const CODE_PREFIX = 'v1-';
 
         function allBoxes() { return Array.from(document.querySelectorAll('input[type="checkbox"]')); }
 
-        // Итоговый порядок: зафиксированный список + любые новые id из HTML (по порядку в странице)
         function orderedIds() {
             const extra = allBoxes().map(c => c.id).filter(id => id && !BIT_ORDER.includes(id));
             return BIT_ORDER.concat(extra);
         }
 
-        // Состояние чекбоксов -> код
         function encodeState() {
             const idsList = orderedIds();
             const bytes = new Uint8Array(Math.ceil(idsList.length / 8));
@@ -639,11 +635,10 @@
             return CODE_PREFIX + btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
         }
 
-        // Код -> объект {id: true/false} либо null, если код кривой
         function decodeCode(raw) {
             if (!raw) return null;
             raw = raw.trim();
-            if (raw.includes('#')) raw = raw.slice(raw.lastIndexOf('#') + 1);   // можно вставить ссылку целиком
+            if (raw.includes('#')) raw = raw.slice(raw.lastIndexOf('#') + 1);
             if (!raw.startsWith(CODE_PREFIX)) return null;
             const body = raw.slice(CODE_PREFIX.length);
             if (!/^[A-Za-z0-9_-]*$/.test(body)) return null;
@@ -687,7 +682,6 @@
             });
         }
 
-        // Функция пересчета двойного прогресса
         function updateDoubleProgress() {
             const stdCheckboxes = document.querySelectorAll('.grid input[type="checkbox"].std-ch');
             const extCheckboxes = document.querySelectorAll('.grid input[type="checkbox"].ext-ch');
@@ -721,7 +715,6 @@
             const hashState = decodeCode(location.hash.slice(1));
 
             if (hashState) {
-                // ===== Режим просмотра чужого прогресса: localStorage НЕ трогаем =====
                 document.body.classList.add('view-mode');
                 boxes.forEach(ch => { ch.checked = !!hashState[ch.id]; ch.disabled = true; });
                 document.getElementById('view-banner').hidden = false;
@@ -741,7 +734,6 @@
                 return;
             }
 
-            // ===== Обычный режим =====
             boxes.forEach(ch => {
                 if (ch.id) {
                     let saved = null;
@@ -789,5 +781,4 @@
     </script>
 </body>
 </html>
-
 
